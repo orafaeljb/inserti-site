@@ -16,9 +16,6 @@ import {
   ArrowRight,
   Headphones,
   CheckCircle2,
-  Newspaper,
-  Award,
-  BookOpen,
 } from "lucide-react";
 import { serviceGroupsData, servicesData, getServiceBySlug } from "@/data/services";
 
@@ -26,7 +23,6 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isServicesOpen, setIsServicesOpen] = useState(false);
-  const [isNewsOpen, setIsNewsOpen] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -41,7 +37,6 @@ export function Navbar() {
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setIsServicesOpen(false);
-    setIsNewsOpen(false);
   }, [pathname]);
 
   const groupIcons: Record<string, React.ElementType> = {
@@ -165,68 +160,16 @@ export function Navbar() {
               </Link>
 
 
-              {/* News Dropdown (Submenus: Cases e Blog) */}
-              <div
-                className="relative"
-                onMouseEnter={() => setIsNewsOpen(true)}
-                onMouseLeave={() => setIsNewsOpen(false)}
+              <Link
+                href="/blog"
+                className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  pathname.startsWith("/blog")
+                    ? "text-brand-blue font-semibold"
+                    : "text-brand-navy/80 hover:text-brand-blue"
+                }`}
               >
-                <button
-                  type="button"
-                  className={`px-3 py-2 text-sm font-medium rounded-lg inline-flex items-center gap-1 transition-colors ${
-                    pathname.startsWith("/cases") || pathname.startsWith("/blog")
-                      ? "text-brand-blue font-semibold"
-                      : "text-brand-navy/80 hover:text-brand-blue"
-                  }`}
-                  aria-expanded={isNewsOpen}
-                >
-                  <span>News</span>
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform duration-200 ${
-                      isNewsOpen ? "rotate-180 text-brand-blue" : ""
-                    }`}
-                  />
-                </button>
-
-                {/* Submenu Dropdown */}
-                {isNewsOpen && (
-                  <div className="absolute top-full left-0 w-64 bg-white rounded-2xl shadow-xl border border-brand-navy/10 p-3 space-y-1 animate-in fade-in zoom-in-95 duration-200">
-                    <Link
-                      href="/cases"
-                      className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-brand-blue/5 transition-all group"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-brand-navy/5 text-brand-blue flex items-center justify-center shrink-0 group-hover:bg-brand-blue group-hover:text-white transition-colors">
-                        <Award className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-brand-navy group-hover:text-brand-blue transition-colors">
-                          Cases de Sucesso
-                        </div>
-                        <div className="text-[10px] text-brand-navy/60">
-                          Resultados reais de clientes
-                        </div>
-                      </div>
-                    </Link>
-
-                    <Link
-                      href="/blog"
-                      className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-brand-blue/5 transition-all group"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-brand-navy/5 text-brand-blue flex items-center justify-center shrink-0 group-hover:bg-brand-blue group-hover:text-white transition-colors">
-                        <BookOpen className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-brand-navy group-hover:text-brand-blue transition-colors">
-                          Blog & Artigos
-                        </div>
-                        <div className="text-[10px] text-brand-navy/60">
-                          Conhecimento técnico e guias
-                        </div>
-                      </div>
-                    </Link>
-                  </div>
-                )}
-              </div>
+                News
+              </Link>
 
               <Link
                 href="/contato"
@@ -319,24 +262,12 @@ export function Navbar() {
               ))}
             </div>
 
-            {/* Mobile News (Cases & Blog) */}
-            <div className="border border-slate-200 rounded-2xl p-3 bg-slate-50/50 space-y-2">
-              <div className="text-xs font-bold uppercase tracking-wider text-brand-blue">
-                News
-              </div>
-              <Link
-                href="/cases"
-                className="block pl-2 py-1 text-xs text-brand-navy/80 hover:text-brand-blue font-semibold"
-              >
-                Cases de Sucesso
-              </Link>
-              <Link
-                href="/blog"
-                className="block pl-2 py-1 text-xs text-brand-navy/80 hover:text-brand-blue font-semibold"
-              >
-                Blog & Artigos Técnicos
-              </Link>
-            </div>
+            <Link
+              href="/blog"
+              className="block px-3 py-2 rounded-lg text-sm font-semibold text-brand-navy hover:bg-brand-blue/5 hover:text-brand-blue"
+            >
+              News
+            </Link>
 
             <Link
               href="/diagnostico"
