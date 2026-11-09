@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { sendLead } from "@/lib/lead";
+import { Turnstile, TurnstileHandle, turnstileEnabled } from "@/components/common/Turnstile";
 import { ServiceItem } from "@/data/services";
 import { SITE_CONFIG } from "@/lib/constants";
 import {
@@ -58,17 +60,45 @@ export function ServiceHero({ service }: ServiceHeroProps) {
     phone: "",
     company: "",
     message: "",
+    website: "",
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstileRef = useRef<TurnstileHandle>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (turnstileEnabled && !turnstileToken) {
+      setError("Confirme que você não é um robô.");
+      return;
+    }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setSubmitted(true);
-    }, 600);
+    setError("");
+    const result = await sendLead({
+      consent,
+      turnstileToken,
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      company: formData.company,
+      message: formData.message,
+      website: formData.website,
+      extras: [
+        { label: "Serviço", value: service.title },
+        ...(service.hero.form?.messageLabel
+          ? [{ label: "Pergunta do formulário", value: service.hero.form.messageLabel }]
+          : []),
+      ],
+    });
+    setLoading(false);
+    if (result.ok) setSubmitted(true);
+    else {
+      setError(result.error ?? "Não foi possível enviar. Tente novamente.");
+      turnstileRef.current?.reset();
+    }
   };
 
   return (
@@ -257,6 +287,43 @@ export function ServiceHero({ service }: ServiceHeroProps) {
                     />
                   </div>
 
+                  {/* Campo isca contra robôs (invisível para pessoas) */}
+                  <input
+                    type="text"
+                    name="website"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                    value={formData.website}
+                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                    className="absolute -left-[9999px] h-0 w-0 opacity-0"
+                  />
+
+                  <label className="flex items-start gap-2.5 text-[11px] text-brand-navy/70 leading-snug cursor-pointer">
+                    <input
+                      type="checkbox"
+                      required
+                      checked={consent}
+                      onChange={(e) => setConsent(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 accent-brand-navy"
+                    />
+                    <span>
+                      Li e concordo com a{" "}
+                      <a href="/politica-de-privacidade" target="_blank" rel="noopener noreferrer" className="underline text-brand-navy hover:text-brand-blue">
+                        Política de Privacidade
+                      </a>{" "}
+                      e autorizo o uso dos meus dados para que a Inserti entre em contato. *
+                    </span>
+                  </label>
+
+                  {turnstileEnabled && <Turnstile ref={turnstileRef} onToken={setTurnstileToken} />}
+
+                  {error && (
+                    <p role="alert" className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                      {error}
+                    </p>
+                  )}
+
                   <div className="pt-1">
                     <button
                       type="submit"
@@ -291,7 +358,7 @@ export function ServiceHero({ service }: ServiceHeroProps) {
                     Solicitação Recebida com Sucesso!
                   </h3>
                   <p className="text-xs text-brand-navy/70 leading-relaxed mb-6">
-                    Obrigado, <strong>{formData.name}</strong>. Nossa equipe de engenharia sênior já está analisando sua solicitação para {service.title} e entrará em contato em instantes.
+                    Obrigado, <strong>{formData.name}</strong>. Recebemos sua solicitação para {service.title} e nossa equipe entrará em contato em breve.
                   </p>
                   <a
                     href={`https://wa.me/${SITE_CONFIG.contact.whatsappClean}?text=${encodeURIComponent(

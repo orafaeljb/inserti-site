@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Send, CheckCircle2, Headphones, AlertCircle } from "lucide-react";
 import { SITE_CONFIG } from "@/lib/constants";
+import { sendLead } from "@/lib/lead";
+import { Turnstile, TurnstileHandle, turnstileEnabled } from "@/components/common/Turnstile";
 
 export function ContactForm() {
   const [formData, setFormData] = useState({
@@ -13,20 +15,45 @@ export function ContactForm() {
     companySize: "30-100 computadores",
     service: "Proteção de dados",
     message: "",
+    website: "",
   });
 
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const [error, setError] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstileRef = useRef<TurnstileHandle>(null);
 
-    // Simulate reliable submission
-    setTimeout(() => {
-      setLoading(false);
-      setSubmitted(true);
-    }, 600);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (turnstileEnabled && !turnstileToken) {
+      setError("Confirme que você não é um robô.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    const result = await sendLead({
+      consent,
+      turnstileToken,
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      company: formData.company,
+      message: formData.message,
+      website: formData.website,
+      extras: [
+        { label: "Interesse", value: formData.service },
+        { label: "Porte", value: formData.companySize },
+      ],
+    });
+    setLoading(false);
+    if (result.ok) setSubmitted(true);
+    else {
+      setError(result.error ?? "Não foi possível enviar. Tente novamente.");
+      turnstileRef.current?.reset();
+    }
   };
 
   if (submitted) {
@@ -39,7 +66,7 @@ export function ContactForm() {
           Solicitação Recebida com Sucesso!
         </h3>
         <p className="text-sm text-brand-navy/70 leading-relaxed max-w-md mx-auto mb-8">
-          Obrigado pelo contato, <strong>{formData.name}</strong>. Nosso especialista sênior entrará em contato em menos de 15 minutos úteis para apresentar o diagnóstico preliminar.
+          Obrigado pelo contato, <strong>{formData.name}</strong>. Recebemos sua solicitação e nossa equipe entrará em contato em breve.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <a
@@ -67,7 +94,7 @@ export function ContactForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white rounded-3xl p-8 sm:p-10 border border-slate-200 shadow-xl space-y-6"
+      className="relative bg-white rounded-3xl p-8 sm:p-10 border border-slate-200 shadow-xl space-y-6"
     >
       <div className="border-b border-slate-100 pb-4">
         <h3 className="font-heading font-black text-xl text-brand-navy">
@@ -185,6 +212,43 @@ export function ContactForm() {
           className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-brand-navy focus:border-brand-blue focus:ring-1 focus:ring-brand-blue outline-none transition-all resize-none"
         />
       </div>
+
+      {/* Campo isca contra robôs (invisível para pessoas) */}
+      <input
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        value={formData.website}
+        onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+        className="absolute -left-[9999px] h-0 w-0 opacity-0"
+      />
+
+    <label className="flex items-start gap-2.5 text-[11px] text-brand-navy/70 leading-snug cursor-pointer">
+      <input
+        type="checkbox"
+        required
+        checked={consent}
+        onChange={(e) => setConsent(e.target.checked)}
+        className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 accent-brand-navy"
+      />
+      <span>
+        Li e concordo com a{" "}
+        <a href="/politica-de-privacidade" target="_blank" rel="noopener noreferrer" className="underline text-brand-navy hover:text-brand-blue">
+          Política de Privacidade
+        </a>{" "}
+        e autorizo o uso dos meus dados para que a Inserti entre em contato. *
+      </span>
+    </label>
+
+    {turnstileEnabled && <Turnstile ref={turnstileRef} onToken={setTurnstileToken} />}
+
+      {error && (
+        <p role="alert" className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+          {error}
+        </p>
+      )}
 
       <div className="pt-2">
         <button
